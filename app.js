@@ -3,6 +3,7 @@ const app = express(); // Create an Express app
 const path = require("path"); // Import path module
 const Campgroud = require("./models/campground"); // Import Campground model
 const mongoose = require("mongoose"); // Import Mongoose
+const campground = require("./models/campground");
 
 // Connect to MongoDB
 mongoose.connect("mongodb://127.0.0.1:27017/yelp-camp");
@@ -12,21 +13,37 @@ db.once("open", () => {
     console.log("Database connected");
 });
 
+app.use(express.urlencoded({ extended: true }))
+
 // Set up EJS view engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "/views")); // Set views directory
 
-// Root route
-app.get("/", (req, res) => {
-    res.render("home.ejs");
+app.get("/campgrounds", async (req, res) => {
+    const campgrounds = await Campgroud.find();
+    res.render("campgrounds/index.ejs", { campgrounds });
 });
 
-// Route to create a new campground
-app.get("/make-campground", async (req, res) => {
-    const camp = new Campgroud({ title: "My backyard" });
-    await camp.save();
-    res.send(camp);
+app.get("/campgrounds/new", (req, res) => {
+    res.render("campgrounds/new.ejs");
 });
+
+app.post("/campgrounds/new", async (req, res) => {
+    console.log(req.body);
+    const addCampground = new Campgroud(req.body.campground);
+    await addCampground.save();
+    res.redirect("/campgrounds");
+});
+
+app.get("/campgrounds/:id", async (req, res) => {
+    const { id } = req.params;
+    const foundCampground = await Campgroud.findById(id);
+    res.render("campgrounds/show.ejs", { foundCampground });
+});
+
+
+
+
 
 // Start the server
 app.listen(3000, () => {
